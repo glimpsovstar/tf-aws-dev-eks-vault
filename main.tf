@@ -173,3 +173,18 @@ resource "aws_lb_listener" "vault_https" {
     target_group_arn = aws_lb_target_group.vault.arn
   }
 }
+resource "kubernetes_persistent_volume_claim" "vault_storage" {
+  metadata {
+    name      = "${var.vault_name}-storage"
+    namespace = kubernetes_namespace.vault.metadata.0.name
+  }
+
+  spec {
+    access_modes = ["ReadWriteOnce"]
+    resources {
+      requests = {
+        storage = var.vault_storage_size
+      }
+    }
+  }
+}

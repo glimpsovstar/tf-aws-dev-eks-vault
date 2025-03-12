@@ -5,7 +5,7 @@ output "vault_namespace" {
 
 output "vault_storage_pvc" {
   description = "Persistent Volume Claim name for Vault storage"
-  value       = kubernetes_stateful_set.vault.volume_claim_template.0.metadata.0.name
+  value       = kubernetes_persistent_volume_claim.vault_storage.metadata.0.name
 }
 
 output "vault_tls_secret" {
