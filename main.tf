@@ -34,48 +34,51 @@ resource "kubernetes_stateful_set" "vault" {
 
           args  = ["server"]
 
-          volume_mount {
-            name       = "vault-tls"
-            mount_path = "/etc/tls"
-            read_only  = true
-          }
-
-          volume_mount {
-            mount_path = "/vault/data"
-            name       = "vault-storage"
-          }
-
-          port {
+          volume_mount = [
+            {
+              name       = "vault-tls"
+              mount_path = "/etc/tls"
+              read_only  = true
+            },
+            {
+              mount_path = "/vault/data"
+              name       = "vault-storage"
+            }
+          ]
+          ports = [
+            {
             container_port = 8200
-          }
+            }
+          ]
 
-          env {
-            name  = "VAULT_ADDR"
-            value = "https://${var.vault_domain_name}"
-          }
-
-          env {
-            name  = "VAULT_CLUSTER_ADDR"
-            value = "https://${var.vault_domain_name}:8200"
-          }
-
-          env {
-            name  = "VAULT_SEAL_TYPE"
-            value = "awskms"
-          }
-
-          env {
-            name  = "VAULT_AWSKMS_SEAL_KEY_ID"
-            value = var.kms_key_id
-          }
+          env = [
+            {
+              name  = "VAULT_ADDR"
+              value = "https://${var.vault_domain_name}"
+            },
+            {
+              name  = "VAULT_CLUSTER_ADDR"
+              value = "https://${var.vault_domain_name}:8200"
+            },
+            {
+              name  = "VAULT_SEAL_TYPE"
+              value = "awskms"
+            },
+            {
+              name  = "VAULT_AWSKMS_SEAL_KEY_ID"
+              value = var.kms_key_id
+            }
+          ]
         }
 
-        volumes {
-          name = "vault-tls"
-          secret {
-            secret_name = "vault-tls"
+        volumes = [
+          {
+            name = "vault-tls"
+            secret {
+              secret_name = "vault-tls"
+            }
           }
-        }
+        ]
       }
     }
 
