@@ -30,44 +30,73 @@ resource "kubernetes_stateful_set" "vault" {
       spec {
         container {
           name  = "vault"
-          image = "hashicorp/vault:1.14"
+          image = "hashicorp/vault:latest"
+
+          args  = ["server"]
+
+          volumeMounts = [
+            {
+              name      = "vault-tls"
+              mountPath = "/etc/tls"
+              readOnly  = true
+            },
+            {
+              mountPath = "/vault/data"
+              name       = "vault-storage"
+            }
+          ]
+
           port {
             container_port = 8200
           }
+
           env {
             name  = "VAULT_ADDR"
             value = "https://${var.vault_domain_name}"
           }
+
           env {
             name  = "VAULT_CLUSTER_ADDR"
             value = "https://${var.vault_domain_name}:8200"
           }
+
           env {
             name  = "VAULT_SEAL_TYPE"
             value = "awskms"
           }
+
           env {
             name  = "VAULT_AWSKMS_SEAL_KEY_ID"
             value = var.kms_key_id
           }
-          volume_mount {
-            mount_path = "/vault/data"
-            name       = "vault-storage"
-          }
         }
       }
-    }
 
-    volume_claim_template {
-      metadata {
-        name = "vault-storage"
-      }
-      spec {
-        access_modes = ["ReadWriteOnce"]
-        resources {
-          requests = {
-            storage = var.vault_storage_size
+      volumes = [
+        {
+          name = "vault-tls"
+          secret = {
+            secretName = "vault-tls"
           }
+        }
+      ]
+    }
+  }
+
+  persistentVolumeClaimRetentionPolicy {
+    whenDeleted = "Retain"
+    whenScaled  = "Retain"
+  }
+
+  volumeClaimTemplates {
+    metadata {
+      name = "vault-storage"
+    }
+    spec {
+      access_modes = ["ReadWriteOnce"]
+      resources {
+        requests = {
+          storage = var.vault_storage_size
         }
       }
     }
@@ -82,58 +111,64 @@ resource "helm_release" "cert_manager" {
   repository = "https://charts.jetstack.io"
   chart      = "cert-manager"
   version    = "v1.13.2"
+
   set {
     name  = "installCRDs"
     value = "true"
   }
+
+  set {
+    name  = "extraArgs[0]"
+    value = "--enable-certificate-owner-ref=true"
+  }
 }
 
-#resource "kubernetes_manifest" "letsencrypt_issuer" {
-#  manifest = {
-#    apiVersion = "cert-manager.io/v1"
-#    kind       = "ClusterIssuer"
-#    metadata = {
-#      name = "letsencrypt-prod"
-#    }
-#    spec = {
-#      acme = {
-#        email  = var.letsencrypt_email
-#        server = "https://acme-v02.api.letsencrypt.org/directory"
-#        privateKeySecretRef = {
-#          name = "letsencrypt-prod"
-#        }
-#        solvers = [{
-#          http01 = {
-#            ingress = {
-#              class = "nginx"
-#            }
-#          }
-#        }]
-#      }
-#    }
-#  }
-#}
-#
-#resource "kubernetes_manifest" "vault_certificate" {
-#  manifest = {
-#    apiVersion = "cert-manager.io/v1"
-#    kind       = "Certificate"
-#    metadata = {
-#      name      = "vault-tls"
-#      namespace = kubernetes_namespace.vault.metadata.0.name
-#    }
-#    spec = {
-#      secretName  = "vault-tls"
-#      duration    = "90d"
-#      renewBefore = "30d"
-#      issuerRef = {
-#        name = "letsencrypt-prod"
-#        kind = "ClusterIssuer"
-#      }
-#      dnsNames = [var.vault_domain_name]
-#    }
-#  }
-#}
+resource "kubernetes_manifest" "letsencrypt_issuer" {
+  manifest = {
+    apiVersion = "cert-manager.io/v1"
+    kind       = "ClusterIssuer"
+    metadata = {
+      name = "letsencrypt-prod"
+    }
+    spec = {
+      acme = {
+        email  = var.letsencrypt_email
+        server = "https://acme-v02.api.letsencrypt.org/directory"
+        privateKeySecretRef = {
+          name = "letsencrypt-prod"
+        }
+        solvers = [{
+          http01 = {
+            ingress = {
+              class = "nginx"
+            }
+          }
+        }]
+      }
+    }
+  }
+}
+
+resource "kubernetes_manifest" "vault_certificate" {
+  manifest = {
+    apiVersion = "cert-manager.io/v1"
+    kind       = "Certificate"
+    metadata = {
+      name      = "vault-tls"
+      namespace = kubernetes_namespace.vault.metadata.0.name
+    }
+    spec = {
+      secretName  = "vault-tls"
+      duration    = "90d"
+      renewBefore = "30d"
+      issuerRef = {
+        name = "letsencrypt-prod"
+        kind = "ClusterIssuer"
+      }
+      dnsNames = [var.vault_domain_name]
+    }
+  }
+}
 
 resource "kubernetes_secret" "vault_root_token" {
   metadata {
@@ -141,11 +176,11 @@ resource "kubernetes_secret" "vault_root_token" {
     namespace = kubernetes_namespace.vault.metadata.0.name
   }
 
+  type = "Opaque"
+
   data = {
     root_token = "REPLACE_WITH_GENERATED_TOKEN"
   }
-
-  type = "Opaque"
 }
 
 resource "aws_lb" "vault_nlb" {
@@ -173,6 +208,7 @@ resource "aws_lb_listener" "vault_https" {
     target_group_arn = aws_lb_target_group.vault.arn
   }
 }
+
 resource "kubernetes_persistent_volume_claim" "vault_storage" {
   metadata {
     name      = "${var.vault_name}-storage"
@@ -203,3 +239,4 @@ resource "aws_iam_role_policy_attachment" "eks_vpc_resource_controller" {
   role       = data.terraform_remote_state.eks.outputs.eks_iam_role_name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSVPCResourceController"
 }
+
