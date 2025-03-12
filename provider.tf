@@ -11,9 +11,9 @@ provider "aws" {
   region = var.aws_region
 }
 
-data "aws_eks_cluster" "eks" {
-  name = data.terraform_remote_state.eks.outputs.eks_cluster_name
-}
+#data "aws_eks_cluster" "eks" {
+#  name = data.terraform_remote_state.eks.outputs.eks_cluster_name
+#}
 
 data "aws_eks_cluster_auth" "eks_auth" {
   name = data.terraform_remote_state.eks.outputs.eks_cluster_name
