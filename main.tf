@@ -34,17 +34,16 @@ resource "kubernetes_stateful_set" "vault" {
 
           args  = ["server"]
 
-          volumeMounts = [
-            {
-              name      = "vault-tls"
-              mountPath = "/etc/tls"
-              readOnly  = true
-            },
-            {
-              mountPath = "/vault/data"
-              name       = "vault-storage"
-            }
-          ]
+          volume_mount {
+            name       = "vault-tls"
+            mount_path = "/etc/tls"
+            read_only  = true
+          }
+
+          volume_mount {
+            mount_path = "/vault/data"
+            name       = "vault-storage"
+          }
 
           port {
             container_port = 8200
@@ -70,38 +69,34 @@ resource "kubernetes_stateful_set" "vault" {
             value = var.kms_key_id
           }
         }
-      }
 
-      volumes = [
-        {
+        volumes {
           name = "vault-tls"
-          secret = {
-            secretName = "vault-tls"
+          secret {
+            secret_name = "vault-tls"
           }
         }
-      ]
+      }
     }
-  }
 
-  persistentVolumeClaimRetentionPolicy {
-    whenDeleted = "Retain"
-    whenScaled  = "Retain"
-  }
+    volume_claim_template {
+      metadata {
+        name = "vault-storage"
+      }
 
-  volumeClaimTemplates {
-    metadata {
-      name = "vault-storage"
-    }
-    spec {
-      access_modes = ["ReadWriteOnce"]
-      resources {
-        requests = {
-          storage = var.vault_storage_size
+      spec {
+        access_modes = ["ReadWriteOnce"]
+        resources {
+          requests = {
+            storage = var.vault_storage_size
+          }
         }
       }
     }
   }
 }
+
+
 
 resource "helm_release" "cert_manager" {
   name             = "cert-manager"
