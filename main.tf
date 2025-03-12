@@ -88,52 +88,52 @@ resource "helm_release" "cert_manager" {
   }
 }
 
-resource "kubernetes_manifest" "letsencrypt_issuer" {
-  manifest = {
-    apiVersion = "cert-manager.io/v1"
-    kind       = "ClusterIssuer"
-    metadata = {
-      name = "letsencrypt-prod"
-    }
-    spec = {
-      acme = {
-        email  = var.letsencrypt_email
-        server = "https://acme-v02.api.letsencrypt.org/directory"
-        privateKeySecretRef = {
-          name = "letsencrypt-prod"
-        }
-        solvers = [{
-          http01 = {
-            ingress = {
-              class = "nginx"
-            }
-          }
-        }]
-      }
-    }
-  }
-}
-
-resource "kubernetes_manifest" "vault_certificate" {
-  manifest = {
-    apiVersion = "cert-manager.io/v1"
-    kind       = "Certificate"
-    metadata = {
-      name      = "vault-tls"
-      namespace = kubernetes_namespace.vault.metadata.0.name
-    }
-    spec = {
-      secretName  = "vault-tls"
-      duration    = "90d"
-      renewBefore = "30d"
-      issuerRef = {
-        name = "letsencrypt-prod"
-        kind = "ClusterIssuer"
-      }
-      dnsNames = [var.vault_domain_name]
-    }
-  }
-}
+#resource "kubernetes_manifest" "letsencrypt_issuer" {
+#  manifest = {
+#    apiVersion = "cert-manager.io/v1"
+#    kind       = "ClusterIssuer"
+#    metadata = {
+#      name = "letsencrypt-prod"
+#    }
+#    spec = {
+#      acme = {
+#        email  = var.letsencrypt_email
+#        server = "https://acme-v02.api.letsencrypt.org/directory"
+#        privateKeySecretRef = {
+#          name = "letsencrypt-prod"
+#        }
+#        solvers = [{
+#          http01 = {
+#            ingress = {
+#              class = "nginx"
+#            }
+#          }
+#        }]
+#      }
+#    }
+#  }
+#}
+#
+#resource "kubernetes_manifest" "vault_certificate" {
+#  manifest = {
+#    apiVersion = "cert-manager.io/v1"
+#    kind       = "Certificate"
+#    metadata = {
+#      name      = "vault-tls"
+#      namespace = kubernetes_namespace.vault.metadata.0.name
+#    }
+#    spec = {
+#      secretName  = "vault-tls"
+#      duration    = "90d"
+#      renewBefore = "30d"
+#      issuerRef = {
+#        name = "letsencrypt-prod"
+#        kind = "ClusterIssuer"
+#      }
+#      dnsNames = [var.vault_domain_name]
+#    }
+#  }
+#}
 
 resource "kubernetes_secret" "vault_root_token" {
   metadata {

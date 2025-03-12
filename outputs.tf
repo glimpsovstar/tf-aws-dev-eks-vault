@@ -17,3 +17,4 @@ output "vault_root_token_secret" {
   description = "Kubernetes secret storing Vault root token"
   value       = kubernetes_secret.vault_root_token.metadata.0.name
 }
+
