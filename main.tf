@@ -16,7 +16,7 @@ resource "kubernetes_stateful_set" "vault" {
 
     selector {
       match_labels = {
-        app = "vault"
+        app = var.vault_name
       }
     }
 
@@ -156,10 +156,10 @@ resource "aws_lb" "vault_nlb" {
 }
 
 resource "aws_lb_target_group" "vault" {
-  name     = "${var.vault_name}-tg"
-  port     = 8200
-  protocol = "TCP"
-  vpc_id   = data.terraform_remote_state.eks.outputs.vpc_id
+  name        = "${var.vault_name}-tg"
+  port        = 8200
+  protocol    = "TCP"
+  vpc_id      = data.terraform_remote_state.eks.outputs.vpc_id
   target_type = "ip"
 }
 
@@ -169,7 +169,7 @@ resource "aws_lb_listener" "vault_https" {
   protocol          = "TCP"
 
   default_action {
-    type = "forward"
+    type             = "forward"
     target_group_arn = aws_lb_target_group.vault.arn
   }
 }

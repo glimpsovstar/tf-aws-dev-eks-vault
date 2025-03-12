@@ -16,7 +16,8 @@ data "aws_eks_cluster" "eks" {
 }
 
 provider "kubernetes" {
-  host                   = data.terraform_remote_state.eks.outputs.eks_cluster_endpoint
+  host                   = data.aws_eks_cluster.eks.endpoint
   token                  = data.aws_eks_cluster_auth.eks_auth.token
-  cluster_ca_certificate = base64decode(data.terraform_remote_state.eks.outputs.eks_certificate_authority)
+  cluster_ca_certificate = base64decode(data.aws_eks_cluster.eks.certificate_authority.0.data)
 }
+
