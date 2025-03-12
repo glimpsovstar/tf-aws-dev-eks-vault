@@ -96,8 +96,6 @@ resource "kubernetes_stateful_set" "vault" {
   }
 }
 
-
-
 resource "helm_release" "cert_manager" {
   name             = "cert-manager"
   namespace        = "cert-manager"
@@ -118,7 +116,16 @@ resource "helm_release" "cert_manager" {
   }
 }
 
+# Add a Kubernetes wait time to ensure cert-manager is fully deployed before applying other manifests
+resource "time_sleep" "wait_for_cert_manager" {
+  depends_on = [helm_release.cert_manager]
+
+  create_duration = "30s" # Adjust if needed
+}
+
 resource "kubernetes_manifest" "letsencrypt_issuer" {
+  depends_on = [time_sleep.wait_for_cert_manager]
+
   manifest = {
     apiVersion = "cert-manager.io/v1"
     kind       = "ClusterIssuer"
@@ -145,6 +152,8 @@ resource "kubernetes_manifest" "letsencrypt_issuer" {
 }
 
 resource "kubernetes_manifest" "vault_certificate" {
+  depends_on = [time_sleep.wait_for_cert_manager]
+
   manifest = {
     apiVersion = "cert-manager.io/v1"
     kind       = "Certificate"
@@ -164,6 +173,7 @@ resource "kubernetes_manifest" "vault_certificate" {
     }
   }
 }
+
 
 resource "kubernetes_secret" "vault_root_token" {
   metadata {
