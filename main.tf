@@ -148,4 +148,28 @@ resource "kubernetes_secret" "vault_root_token" {
   type = "Opaque"
 }
 
+resource "aws_lb" "vault_nlb" {
+  name               = "${var.vault_name}-nlb"
+  internal           = false
+  load_balancer_type = "network"
+  subnets            = data.terraform_remote_state.eks.outputs.subnet_ids
+}
 
+resource "aws_lb_target_group" "vault" {
+  name     = "${var.vault_name}-tg"
+  port     = 8200
+  protocol = "TCP"
+  vpc_id   = data.terraform_remote_state.eks.outputs.vpc_id
+  target_type = "ip"
+}
+
+resource "aws_lb_listener" "vault_https" {
+  load_balancer_arn = aws_lb.vault_nlb.arn
+  port              = 8200
+  protocol          = "TCP"
+
+  default_action {
+    type = "forward"
+    target_group_arn = aws_lb_target_group.vault.arn
+  }
+}
