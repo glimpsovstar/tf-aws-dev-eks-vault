@@ -188,3 +188,18 @@ resource "kubernetes_persistent_volume_claim" "vault_storage" {
     }
   }
 }
+
+resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
+  role       = data.terraform_remote_state.eks.outputs.eks_iam_role_name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+}
+
+resource "aws_iam_role_policy_attachment" "eks_service_policy" {
+  role       = data.terraform_remote_state.eks.outputs.eks_iam_role_name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSServicePolicy"
+}
+
+resource "aws_iam_role_policy_attachment" "eks_vpc_resource_controller" {
+  role       = data.terraform_remote_state.eks.outputs.eks_iam_role_name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSVPCResourceController"
+}
