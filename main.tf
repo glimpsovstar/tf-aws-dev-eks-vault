@@ -74,7 +74,7 @@ resource "kubernetes_stateful_set" "vault" {
         volumes = [
           {
             name = "vault-tls"
-            secret {
+            secret = {
               secret_name = "vault-tls"
             }
           }
