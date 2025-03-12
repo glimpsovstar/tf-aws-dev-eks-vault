@@ -87,7 +87,7 @@ resource "kubernetes_stateful_set" "vault" {
       spec {
         access_modes = ["ReadWriteOnce"]
         resources {
-          requests {
+          requests = {
             storage = var.vault_storage_size
           }
         }
