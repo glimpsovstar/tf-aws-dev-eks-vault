@@ -32,53 +32,50 @@ resource "kubernetes_stateful_set" "vault" {
           name  = "vault"
           image = "hashicorp/vault:latest"
 
-          args  = ["server"]
+          args = ["server"]
 
-          volume_mount = [
-            {
-              name       = "vault-tls"
-              mount_path = "/etc/tls"
-              read_only  = true
-            },
-            {
-              mount_path = "/vault/data"
-              name       = "vault-storage"
-            }
-          ]
-          ports = [
-            {
+          volume_mount {
+            name       = "vault-tls"
+            mount_path = "/etc/tls"
+            read_only  = true
+          }
+
+          volume_mount {
+            name       = "vault-storage"
+            mount_path = "/vault/data"
+          }
+
+          port {
             container_port = 8200
-            }
-          ]
+          }
 
-          env = [
-            {
-              name  = "VAULT_ADDR"
-              value = "https://${var.vault_domain_name}"
-            },
-            {
-              name  = "VAULT_CLUSTER_ADDR"
-              value = "https://${var.vault_domain_name}:8200"
-            },
-            {
-              name  = "VAULT_SEAL_TYPE"
-              value = "awskms"
-            },
-            {
-              name  = "VAULT_AWSKMS_SEAL_KEY_ID"
-              value = var.kms_key_id
-            }
-          ]
+          env {
+            name  = "VAULT_ADDR"
+            value = "https://${var.vault_domain_name}"
+          }
+
+          env {
+            name  = "VAULT_CLUSTER_ADDR"
+            value = "https://${var.vault_domain_name}:8200"
+          }
+
+          env {
+            name  = "VAULT_SEAL_TYPE"
+            value = "awskms"
+          }
+
+          env {
+            name  = "VAULT_AWSKMS_SEAL_KEY_ID"
+            value = var.kms_key_id
+          }
         }
 
-        volumes = [
-          {
-            name = "vault-tls"
-            secret = {
-              secret_name = "vault-tls"
-            }
+        volume {
+          name = "vault-tls"
+          secret {
+            secret_name = "vault-tls"
           }
-        ]
+        }
       }
     }
 
@@ -90,7 +87,7 @@ resource "kubernetes_stateful_set" "vault" {
       spec {
         access_modes = ["ReadWriteOnce"]
         resources {
-          requests = {
+          requests {
             storage = var.vault_storage_size
           }
         }
