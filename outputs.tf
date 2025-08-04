@@ -48,7 +48,7 @@ output "vault_service_account_name" {
 
 output "vault_service_account_role_arn" {
   description = "ARN of the IAM role for Vault service account"
-  value       = data.terraform_remote_state.eks.outputs.vault_service_account_role_arn
+  value       = data.terraform_remote_state.eks.outputs.vault_iam_role_arn
 }
 
 # Access information
@@ -64,12 +64,12 @@ output "vault_ui_internal_url" {
 
 output "vault_ingress_url" {
   description = "External URL for accessing Vault (if ingress is enabled)"
-  value       = var.enable_ingress && var.vault_domain != "" ? "https://${var.vault_domain}" : null
+  value       = var.enable_ingress && var.vault_dns_name != "" ? "https://${var.vault_dns_name}" : null
 }
 
 output "vault_load_balancer_hostname" {
   description = "Load balancer hostname for external access (if LoadBalancer service is created)"
-  value       = var.enable_ingress == false ? try(kubernetes_service.vault_lb[0].status[0].load_balancer[0].ingress[0].hostname, null) : null
+  value       = null  # LoadBalancer service not implemented in this configuration
 }
 
 # TLS certificate information
