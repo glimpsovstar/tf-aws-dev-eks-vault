@@ -50,6 +50,22 @@ resource "null_resource" "validate_remote_state" {
   }
 }
 
+# Validate AWS credentials and EKS access
+resource "null_resource" "validate_eks_access" {
+  provisioner "local-exec" {
+    command = <<-EOT
+      echo "Current AWS identity: $(aws sts get-caller-identity --query 'Arn' --output text)"
+      echo "Testing EKS cluster access..."
+      aws eks describe-cluster --name "${local.vault_cluster_name}" --region "${var.aws_region}" --query 'cluster.status' --output text
+    EOT
+  }
+  
+  triggers = {
+    cluster_name = local.vault_cluster_name
+    region       = var.aws_region
+  }
+}
+
 #------------------------------------------------------------------------------
 # OUTPUTS SUMMARY
 #------------------------------------------------------------------------------

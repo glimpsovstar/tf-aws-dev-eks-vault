@@ -110,3 +110,27 @@ output "helm_release_version" {
   description = "Version of the Helm chart deployed"
   value       = helm_release.vault.version
 }
+
+#------------------------------------------------------------------------------
+# DEBUG OUTPUTS
+#------------------------------------------------------------------------------
+
+output "debug_aws_caller_identity" {
+  description = "Current AWS caller identity for debugging"
+  value = {
+    account_id = data.aws_caller_identity.current.account_id
+    arn        = data.aws_caller_identity.current.arn
+    user_id    = data.aws_caller_identity.current.user_id
+  }
+}
+
+output "debug_eks_cluster_info" {
+  description = "EKS cluster information for debugging"
+  value = {
+    cluster_name = data.aws_eks_cluster.eks.name
+    endpoint     = data.aws_eks_cluster.eks.endpoint
+    version      = data.aws_eks_cluster.eks.version
+    status       = data.aws_eks_cluster.eks.status
+  }
+  sensitive = true
+}

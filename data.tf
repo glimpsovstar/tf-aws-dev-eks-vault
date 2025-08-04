@@ -9,10 +9,6 @@ data "terraform_remote_state" "eks" {
   }
 }
 
-data "aws_eks_cluster_auth" "eks_auth" {
-  name = data.terraform_remote_state.eks.outputs.eks_cluster_name
-}
-
 # Get VPC information from remote state outputs
 data "aws_vpc" "cluster_vpc" {
   id = data.terraform_remote_state.eks.outputs.vpc_id
