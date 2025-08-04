@@ -1,0 +1,63 @@
+# Example Terraform Variables for Vault EKS Deployment
+# Copy this file to terraform.tfvars and update with your values
+
+# AWS Configuration
+aws_region  = "ap-southeast-2"
+environment = "dev"
+
+# EKS Cluster (retrieved from remote state, but can override if needed)
+# cluster_name = "your-eks-cluster-name"  # Usually not needed as it comes from remote state
+
+# Vault Configuration
+vault_namespace = "vault"
+vault_replicas  = 3
+vault_image_tag = "1.15.4"
+
+# Vault Features
+enable_vault_ui  = true
+enable_audit_log = true
+enable_metrics   = true
+vault_log_level  = "INFO"
+
+# Storage Configuration
+storage_class = "vault-storage"
+storage_size  = "10Gi"
+
+# Resource Configuration
+vault_resources = {
+  requests = {
+    memory = "256Mi"
+    cpu    = "250m"
+  }
+  limits = {
+    memory = "1Gi"
+    cpu    = "1000m"
+  }
+}
+
+# Ingress Configuration (set to true if you want external access via ALB)
+enable_ingress = false
+# If enabling ingress, configure these:
+# vault_domain = "vault.yourdomain.com"
+# ingress_class = "alb"
+# ingress_annotations = {
+#   "kubernetes.io/ingress.class"                    = "alb"
+#   "alb.ingress.kubernetes.io/scheme"              = "internet-facing"
+#   "alb.ingress.kubernetes.io/target-type"         = "ip"
+#   "alb.ingress.kubernetes.io/backend-protocol"    = "HTTPS"
+#   "alb.ingress.kubernetes.io/backend-protocol-version" = "HTTP1"
+#   "alb.ingress.kubernetes.io/healthcheck-path"    = "/v1/sys/health"
+#   "alb.ingress.kubernetes.io/healthcheck-port"    = "8200"
+#   "alb.ingress.kubernetes.io/listen-ports"        = "[{\"HTTP\": 80}, {\"HTTPS\": 443}]"
+#   "alb.ingress.kubernetes.io/ssl-redirect"        = "443"
+#   "alb.ingress.kubernetes.io/certificate-arn"     = "arn:aws:acm:region:account:certificate/cert-id"
+# }
+
+# Metrics Configuration
+metrics_path = "/v1/sys/metrics"
+
+# Additional tags
+tags = {
+  Owner   = "DevOps Team"
+  Purpose = "HashiCorp Vault"
+}

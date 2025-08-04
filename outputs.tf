@@ -1,15 +1,112 @@
+# Vault connection information
 output "vault_namespace" {
-  description = "Kubernetes namespace for Vault"
-  value       = kubernetes_namespace.vault.metadata.0.name
+  description = "Kubernetes namespace where Vault is deployed"
+  value       = kubernetes_namespace.vault.metadata[0].name
 }
 
-output "vault_storage_pvc" {
-  description = "Persistent Volume Claim name for Vault storage"
-  value       = kubernetes_persistent_volume_claim.vault_storage.metadata.0.name
+output "vault_service_name" {
+  description = "Name of the Vault service"
+  value       = "vault"
 }
 
-output "vault_root_token_secret" {
-  description = "Kubernetes secret storing Vault root token"
-  value       = kubernetes_secret.vault_root_token.metadata.0.name
+output "vault_ui_service_name" {
+  description = "Name of the Vault UI service"
+  value       = "vault-ui"
 }
 
+output "vault_port" {
+  description = "Port number for Vault API"
+  value       = 8200
+}
+
+# EKS cluster information from remote state
+output "cluster_name" {
+  description = "Name of the EKS cluster"
+  value       = data.terraform_remote_state.eks.outputs.eks_cluster_name
+}
+
+output "cluster_endpoint" {
+  description = "Endpoint for EKS control plane"
+  value       = data.aws_eks_cluster.eks.endpoint
+}
+
+output "cluster_region" {
+  description = "AWS region where the cluster is deployed"
+  value       = var.aws_region
+}
+
+# Vault configuration details
+output "vault_kms_key_id" {
+  description = "KMS key ID used for Vault auto-unseal"
+  value       = data.terraform_remote_state.eks.outputs.vault_kms_key_id
+}
+
+output "vault_service_account_name" {
+  description = "Name of the Vault service account"
+  value       = kubernetes_service_account.vault.metadata[0].name
+}
+
+output "vault_service_account_role_arn" {
+  description = "ARN of the IAM role for Vault service account"
+  value       = data.terraform_remote_state.eks.outputs.vault_service_account_role_arn
+}
+
+# Access information
+output "vault_internal_url" {
+  description = "Internal URL for accessing Vault within the cluster"
+  value       = "https://vault.${kubernetes_namespace.vault.metadata[0].name}.svc.cluster.local:8200"
+}
+
+output "vault_ui_internal_url" {
+  description = "Internal URL for accessing Vault UI within the cluster"
+  value       = "https://vault-ui.${kubernetes_namespace.vault.metadata[0].name}.svc.cluster.local:8200"
+}
+
+output "vault_ingress_url" {
+  description = "External URL for accessing Vault (if ingress is enabled)"
+  value       = var.enable_ingress && var.vault_domain != "" ? "https://${var.vault_domain}" : null
+}
+
+output "vault_load_balancer_hostname" {
+  description = "Load balancer hostname for external access (if LoadBalancer service is created)"
+  value       = var.enable_ingress == false ? try(kubernetes_service.vault_lb[0].status[0].load_balancer[0].ingress[0].hostname, null) : null
+}
+
+# TLS certificate information
+output "vault_ca_certificate" {
+  description = "Vault CA certificate (base64 encoded)"
+  value       = base64encode(tls_self_signed_cert.vault_ca.cert_pem)
+  sensitive   = true
+}
+
+# Connection commands
+output "kubectl_port_forward_command" {
+  description = "Command to port-forward to Vault for local access"
+  value       = "kubectl port-forward svc/vault-ui 8200:8200 -n ${kubernetes_namespace.vault.metadata[0].name}"
+}
+
+output "vault_init_command" {
+  description = "Command to initialize Vault"
+  value       = "kubectl exec vault-0 -n ${kubernetes_namespace.vault.metadata[0].name} -- vault operator init"
+}
+
+output "vault_status_command" {
+  description = "Command to check Vault status"
+  value       = "kubectl exec vault-0 -n ${kubernetes_namespace.vault.metadata[0].name} -- vault status"
+}
+
+# Helm release information
+output "helm_release_name" {
+  description = "Name of the Helm release for Vault"
+  value       = helm_release.vault.name
+}
+
+output "helm_release_status" {
+  description = "Status of the Helm release"
+  value       = helm_release.vault.status
+}
+
+output "helm_release_version" {
+  description = "Version of the Helm chart deployed"
+  value       = helm_release.vault.version
+}

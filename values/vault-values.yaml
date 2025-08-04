@@ -1,0 +1,111 @@
+# HashiCorp Vault Helm Chart Values
+# This file contains the core configuration for Vault deployment
+
+global:
+  enabled: true
+  tlsDisable: false
+
+server:
+  # Vault configuration
+  extraEnvironmentVars:
+    VAULT_CACERT: /vault/userconfig/vault-tls/ca.crt
+    VAULT_TLSCERT: /vault/userconfig/vault-tls/tls.crt
+    VAULT_TLSKEY: /vault/userconfig/vault-tls/tls.key
+    VAULT_LOG_LEVEL: ${log_level}
+    VAULT_API_ADDR: "https://vault.${namespace}.svc.cluster.local:8200"
+    VAULT_CLUSTER_ADDR: "https://vault.${namespace}.svc.cluster.local:8201"
+
+  # Vault server configuration
+  config: |
+    ui = ${enable_vault_ui}
+    listener "tcp" {
+      address = "[::]:8200"
+      cluster_address = "[::]:8201"
+      tls_cert_file = "/vault/userconfig/vault-tls/tls.crt"
+      tls_key_file = "/vault/userconfig/vault-tls/tls.key"
+      tls_client_ca_file = "/vault/userconfig/vault-tls/ca.crt"
+      tls_disable_client_certs = true
+    }
+
+    storage "raft" {
+      path = "/vault/data"
+      retry_join {
+        leader_api_addr = "https://vault-0.vault-internal.${namespace}.svc.cluster.local:8200"
+        leader_ca_cert_file = "/vault/userconfig/vault-tls/ca.crt"
+        leader_client_cert_file = "/vault/userconfig/vault-tls/tls.crt"
+        leader_client_key_file = "/vault/userconfig/vault-tls/tls.key"
+      }
+      retry_join {
+        leader_api_addr = "https://vault-1.vault-internal.${namespace}.svc.cluster.local:8200"
+        leader_ca_cert_file = "/vault/userconfig/vault-tls/ca.crt"
+        leader_client_cert_file = "/vault/userconfig/vault-tls/tls.crt"
+        leader_client_key_file = "/vault/userconfig/vault-tls/tls.key"
+      }
+      retry_join {
+        leader_api_addr = "https://vault-2.vault-internal.${namespace}.svc.cluster.local:8200"
+        leader_ca_cert_file = "/vault/userconfig/vault-tls/ca.crt"
+        leader_client_cert_file = "/vault/userconfig/vault-tls/tls.crt"
+        leader_client_key_file = "/vault/userconfig/vault-tls/tls.key"
+      }
+    }
+
+    # AWS KMS auto-unseal
+    seal "awskms" {
+      region     = "${region}"
+      kms_key_id = "${kms_key_id}"
+    }
+
+    # Service registration
+    service_registration "kubernetes" {}
+
+    # API and cluster addresses
+    api_addr = "https://vault.${namespace}.svc.cluster.local:8200"
+    cluster_addr = "https://vault.${namespace}.svc.cluster.local:8201"
+
+    %{ if enable_audit_log ~}
+    # Audit logging
+    audit {
+      enabled = true
+    }
+    %{ endif ~}
+
+    %{ if enable_metrics ~}
+    # Telemetry
+    telemetry {
+      prometheus_retention_time = "30s"
+      disable_hostname = true
+    }
+    %{ endif ~}
+
+  # Volume mounts for TLS certificates
+  volumes:
+    - name: vault-tls
+      secret:
+        secretName: vault-tls
+        defaultMode: 420
+
+  volumeMounts:
+    - name: vault-tls
+      mountPath: /vault/userconfig/vault-tls
+      readOnly: true
+
+  # Service account
+  serviceAccount:
+    create: false
+    name: ${service_account}
+
+injector:
+  # Agent injector configuration
+  enabled: true
+  replicas: 1
+
+  # Metrics (controlled by enable_metrics variable)
+  metrics:
+    enabled: ${enable_metrics}
+    path: "${metrics_path}"
+
+  # Service account
+  serviceAccount:
+    create: false
+    name: vault-agent-injector
+    VAULT_LOG_LEVEL: ${log_
