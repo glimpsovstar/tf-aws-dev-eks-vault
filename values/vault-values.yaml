@@ -108,4 +108,3 @@ injector:
   serviceAccount:
     create: false
     name: vault-agent-injector
-    VAULT_LOG_LEVEL: ${log_

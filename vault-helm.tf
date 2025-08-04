@@ -196,6 +196,7 @@ resource "helm_release" "vault" {
       region              = var.aws_region
       enable_audit_log    = var.enable_audit_log
       enable_metrics      = var.enable_metrics
+      enable_vault_ui     = var.enable_vault_ui
       metrics_path        = var.metrics_path
       log_level           = var.vault_log_level
       namespace           = var.vault_namespace
