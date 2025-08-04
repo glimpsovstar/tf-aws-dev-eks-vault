@@ -85,13 +85,13 @@ resource "null_resource" "validate_helm_prerequisites" {
       kubectl get pods -n ${var.vault_namespace} -l app.kubernetes.io/name=vault || echo "No existing Vault pods found"
       kubectl get svc -n ${var.vault_namespace} -l app.kubernetes.io/name=vault || echo "No existing Vault services found"
       
-      # Check storage class
-      echo "Checking storage class availability..."
-      kubectl get storageclass ${var.storage_class} || echo "Warning: Storage class ${var.storage_class} not found"
-      
       # Test basic pod creation capability
       echo "Testing basic pod creation..."
       kubectl auth can-i create pods --namespace=${var.vault_namespace} || echo "Warning: Cannot create pods in namespace"
+      
+      # Check available resources
+      echo "Checking cluster resources..."
+      kubectl describe nodes | grep -A 5 "Allocatable:" || echo "Node resource info not available"
       
       echo "=== Pre-flight checks completed ==="
     EOT
