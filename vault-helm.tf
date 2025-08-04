@@ -45,12 +45,12 @@ resource "helm_release" "vault" {
   
   set {
     name  = "injector.serviceAccount.create"
-    value = "false"
+    value = "true"
   }
   
   set {
     name  = "injector.serviceAccount.name"
-    value = kubernetes_service_account.vault_agent_injector.metadata[0].name
+    value = "vault-agent-injector"
   }
   
   # Server configuration
@@ -94,12 +94,17 @@ resource "helm_release" "vault" {
   # Service account
   set {
     name  = "server.serviceAccount.create"
-    value = "false"
+    value = "true"
   }
   
   set {
     name  = "server.serviceAccount.name"
-    value = kubernetes_service_account.vault.metadata[0].name
+    value = "vault"
+  }
+  
+  set {
+    name  = "server.serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+    value = local.vault_sa_role_arn
   }
   
   # Resources
@@ -200,15 +205,13 @@ resource "helm_release" "vault" {
       metrics_path        = var.metrics_path
       log_level           = var.vault_log_level
       namespace           = var.vault_namespace
-      service_account     = kubernetes_service_account.vault.metadata[0].name
+      service_account     = "vault"
       cluster_name        = data.terraform_remote_state.eks.outputs.eks_cluster_name
     })
   ]
   
   depends_on = [
     kubernetes_namespace.vault,
-    kubernetes_service_account.vault,
-    kubernetes_service_account.vault_agent_injector,
     kubernetes_cluster_role_binding.vault,
     kubernetes_cluster_role_binding.vault_agent_injector,
     kubernetes_secret.vault_tls

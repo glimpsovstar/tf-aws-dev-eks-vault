@@ -1,36 +1,39 @@
-# Service account for Vault
-resource "kubernetes_service_account" "vault" {
-  metadata {
-    name      = "vault"
-    namespace = kubernetes_namespace.vault.metadata[0].name
-    
-    labels = {
-      "app.kubernetes.io/name"       = "vault"
-      "app.kubernetes.io/instance"   = "vault"
-      "app.kubernetes.io/managed-by" = "terraform"
-    }
-    
-    annotations = {
-      "eks.amazonaws.com/role-arn" = local.vault_sa_role_arn
-    }
-  }
-  
-  automount_service_account_token = true
-}
+# Service accounts are now managed by Helm
+# The Helm chart will create these service accounts with proper labels and annotations
 
-# Service account for Vault Agent Injector
-resource "kubernetes_service_account" "vault_agent_injector" {
-  metadata {
-    name      = "vault-agent-injector"
-    namespace = kubernetes_namespace.vault.metadata[0].name
-    
-    labels = {
-      "app.kubernetes.io/name"       = "vault-agent-injector"
-      "app.kubernetes.io/instance"   = "vault"
-      "app.kubernetes.io/managed-by" = "terraform"
-    }
-  }
-}
+# Service account for Vault - managed by Helm
+# resource "kubernetes_service_account" "vault" {
+#   metadata {
+#     name      = "vault"
+#     namespace = kubernetes_namespace.vault.metadata[0].name
+#     
+#     labels = {
+#       "app.kubernetes.io/name"       = "vault"
+#       "app.kubernetes.io/instance"   = "vault"
+#       "app.kubernetes.io/managed-by" = "terraform"
+#     }
+#     
+#     annotations = {
+#       "eks.amazonaws.com/role-arn" = local.vault_sa_role_arn
+#     }
+#   }
+#   
+#   automount_service_account_token = true
+# }
+
+# Service account for Vault Agent Injector - managed by Helm
+# resource "kubernetes_service_account" "vault_agent_injector" {
+#   metadata {
+#     name      = "vault-agent-injector"
+#     namespace = kubernetes_namespace.vault.metadata[0].name
+#     
+#     labels = {
+#       "app.kubernetes.io/name"       = "vault-agent-injector"
+#       "app.kubernetes.io/instance"   = "vault"
+#       "app.kubernetes.io/managed-by" = "terraform"
+#     }
+#   }
+# }
 
 # ClusterRole for Vault
 resource "kubernetes_cluster_role" "vault" {
@@ -89,7 +92,7 @@ resource "kubernetes_cluster_role_binding" "vault" {
 
   subject {
     kind      = "ServiceAccount"
-    name      = kubernetes_service_account.vault.metadata[0].name
+    name      = "vault"
     namespace = kubernetes_namespace.vault.metadata[0].name
   }
 }
@@ -133,7 +136,7 @@ resource "kubernetes_cluster_role_binding" "vault_agent_injector" {
 
   subject {
     kind      = "ServiceAccount"
-    name      = kubernetes_service_account.vault_agent_injector.metadata[0].name
+    name      = "vault-agent-injector"
     namespace = kubernetes_namespace.vault.metadata[0].name
   }
 }

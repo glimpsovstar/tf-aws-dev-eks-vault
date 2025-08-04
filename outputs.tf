@@ -43,7 +43,7 @@ output "vault_kms_key_id" {
 
 output "vault_service_account_name" {
   description = "Name of the Vault service account"
-  value       = kubernetes_service_account.vault.metadata[0].name
+  value       = "vault"
 }
 
 output "vault_service_account_role_arn" {
