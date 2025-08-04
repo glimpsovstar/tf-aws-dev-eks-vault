@@ -1,3 +1,12 @@
+# Generate a unique deployment ID for forced recreation
+resource "random_id" "deployment" {
+  byte_length = 4
+  keepers = {
+    namespace = var.vault_namespace
+    timestamp = timestamp()
+  }
+}
+
 # Add HashiCorp Helm repository
 resource "helm_release" "vault" {
   name       = "vault"
@@ -12,8 +21,29 @@ resource "helm_release" "vault" {
   create_namespace = false
   
   # Force upgrade if needed
-  force_update = true
-  recreate_pods = true
+  force_update     = true
+  recreate_pods    = true
+  replace          = true
+  reset_values     = true
+  reuse_values     = false
+  
+  # Cleanup on failure
+  cleanup_on_fail  = true
+  atomic           = true
+  
+  # Force replacement if name conflicts occur
+  lifecycle {
+    create_before_destroy = false
+    replace_triggered_by = [
+      random_id.deployment
+    ]
+  }
+  
+  # Add a unique identifier to force recreation
+  set {
+    name  = "global.deploy_id"
+    value = "v${random_id.deployment.hex}"
+  }
   
   # Core Vault configuration
   set {
@@ -259,6 +289,7 @@ resource "helm_release" "vault" {
   # ]
   
   depends_on = [
-    kubernetes_namespace.vault
+    kubernetes_namespace.vault,
+    random_id.deployment
   ]
 }
