@@ -212,8 +212,6 @@ resource "helm_release" "vault" {
   
   depends_on = [
     kubernetes_namespace.vault,
-    kubernetes_cluster_role_binding.vault,
-    kubernetes_cluster_role_binding.vault_agent_injector,
     kubernetes_secret.vault_tls
   ]
 }
