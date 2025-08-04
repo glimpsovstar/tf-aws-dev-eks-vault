@@ -66,6 +66,40 @@ resource "null_resource" "validate_eks_access" {
   }
 }
 
+# Pre-flight validation for Helm deployment
+resource "null_resource" "validate_helm_prerequisites" {
+  provisioner "local-exec" {
+    command = <<-EOT
+      echo "=== Pre-flight Vault Deployment Checks ==="
+      
+      # Check if namespace exists
+      echo "Checking namespace..."
+      kubectl get namespace ${var.vault_namespace} || echo "Namespace will be created"
+      
+      # Check node resources
+      echo "Checking node resources..."
+      kubectl top nodes || echo "Metrics not available, continuing..."
+      
+      # Check for existing Vault resources
+      echo "Checking for existing Vault resources..."
+      kubectl get pods -n ${var.vault_namespace} -l app.kubernetes.io/name=vault || echo "No existing Vault pods found"
+      kubectl get svc -n ${var.vault_namespace} -l app.kubernetes.io/name=vault || echo "No existing Vault services found"
+      
+      # Check storage class
+      echo "Checking storage class availability..."
+      kubectl get storageclass ${var.storage_class} || echo "Warning: Storage class ${var.storage_class} not found"
+      
+      # Test basic pod creation capability
+      echo "Testing basic pod creation..."
+      kubectl auth can-i create pods --namespace=${var.vault_namespace} || echo "Warning: Cannot create pods in namespace"
+      
+      echo "=== Pre-flight checks completed ==="
+    EOT
+  }
+  
+  depends_on = [null_resource.validate_eks_access]
+}
+
 #------------------------------------------------------------------------------
 # OUTPUTS SUMMARY
 #------------------------------------------------------------------------------

@@ -9,19 +9,18 @@ resource "helm_release" "vault" {
   
   wait             = true
   wait_for_jobs    = false
-  timeout          = 1200
+  timeout          = 600  # Reduced to 10 minutes
   create_namespace = false
   
   # Force upgrade if needed
   force_update     = true
-  recreate_pods    = true
+  recreate_pods    = false  # Don't force pod recreation
   replace          = true
   reset_values     = true
   reuse_values     = false
   
-  # Cleanup on failure
+  # Cleanup on failure - but don't use atomic
   cleanup_on_fail  = true
-  atomic           = true
   
   # Core Vault configuration
   set {
@@ -116,7 +115,7 @@ resource "helm_release" "vault" {
   
   set {
     name  = "server.dataStorage.storageClass"
-    value = "gp2"
+    value = "gp2"  # Standard EKS storage class
   }
   
   # Service account
@@ -135,25 +134,25 @@ resource "helm_release" "vault" {
     value = local.vault_sa_role_arn
   }
   
-  # Resources
+  # Resources - simplified for reliable scheduling
   set {
     name  = "server.resources.requests.memory"
-    value = var.vault_resources.requests.memory
+    value = "256Mi"  # Reduced memory requirement
   }
   
   set {
     name  = "server.resources.requests.cpu"
-    value = var.vault_resources.requests.cpu
+    value = "100m"   # Reduced CPU requirement
   }
   
   set {
     name  = "server.resources.limits.memory"
-    value = var.vault_resources.limits.memory
+    value = "512Mi"  # Conservative memory limit
   }
   
   set {
     name  = "server.resources.limits.cpu"
-    value = var.vault_resources.limits.cpu
+    value = "200m"   # Conservative CPU limit
   }
   
   # Data storage
@@ -267,6 +266,7 @@ resource "helm_release" "vault" {
   # ]
   
   depends_on = [
-    kubernetes_namespace.vault
+    kubernetes_namespace.vault,
+    null_resource.validate_helm_prerequisites
   ]
 }
