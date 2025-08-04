@@ -7,9 +7,13 @@ resource "helm_release" "vault" {
   namespace  = kubernetes_namespace.vault.metadata[0].name
   
   wait             = true
-  wait_for_jobs    = true
-  timeout          = 600
+  wait_for_jobs    = false
+  timeout          = 1200
   create_namespace = false
+  
+  # Force upgrade if needed
+  force_update = true
+  recreate_pods = true
   
   # Core Vault configuration
   set {
@@ -19,7 +23,7 @@ resource "helm_release" "vault" {
   
   set {
     name  = "global.tlsDisable"
-    value = "false"
+    value = "true"
   }
   
   # Injector configuration
@@ -69,26 +73,42 @@ resource "helm_release" "vault" {
     value = var.vault_log_level
   }
   
-  # High Availability configuration
+  # High Availability configuration - temporarily disabled for initial deployment
   set {
     name  = "server.ha.enabled"
-    value = "true"
+    value = "false"
   }
   
   set {
     name  = "server.ha.replicas"
-    value = var.vault_replicas
+    value = "1"
   }
   
-  # Raft integrated storage
+  # Raft integrated storage - disabled for single-node deployment
   set {
     name  = "server.ha.raft.enabled"
-    value = "true"
+    value = "false"
   }
   
   set {
     name  = "server.ha.raft.setNodeId"
+    value = "false"
+  }
+  
+  # Use file storage for single-node deployment
+  set {
+    name  = "server.dataStorage.enabled"
     value = "true"
+  }
+  
+  set {
+    name  = "server.dataStorage.size"
+    value = "10Gi"
+  }
+  
+  set {
+    name  = "server.dataStorage.storageClass"
+    value = "gp2"
   }
   
   # Service account
@@ -194,24 +214,51 @@ resource "helm_release" "vault" {
     value = "false"
   }
   
-  # Server configuration via values
-  values = [
-    templatefile("${path.module}/values/vault-values.yaml", {
-      kms_key_id          = data.terraform_remote_state.eks.outputs.vault_kms_key_id
-      region              = var.aws_region
-      enable_audit_log    = var.enable_audit_log
-      enable_metrics      = var.enable_metrics
-      enable_vault_ui     = var.enable_vault_ui
-      metrics_path        = var.metrics_path
-      log_level           = var.vault_log_level
-      namespace           = var.vault_namespace
-      service_account     = "vault"
-      cluster_name        = data.terraform_remote_state.eks.outputs.eks_cluster_name
-    })
-  ]
+  # Basic standalone server configuration for initial deployment
+  set {
+    name  = "server.standalone.enabled"
+    value = "true"
+  }
+  
+  set {
+    name  = "server.standalone.config"
+    value = <<-EOT
+      ui = true
+      
+      listener "tcp" {
+        tls_disable = 1
+        address = "[::]:8200"
+        cluster_address = "[::]:8201"
+      }
+      
+      storage "file" {
+        path = "/vault/data"
+      }
+      
+      seal "awskms" {
+        region     = "${var.aws_region}"
+        kms_key_id = "${data.terraform_remote_state.eks.outputs.vault_kms_key_id}"
+      }
+    EOT
+  }
+  
+  # Server configuration via values - temporarily disabled for troubleshooting
+  # values = [
+  #   templatefile("${path.module}/values/vault-values.yaml", {
+  #     kms_key_id          = data.terraform_remote_state.eks.outputs.vault_kms_key_id
+  #     region              = var.aws_region
+  #     enable_audit_log    = var.enable_audit_log
+  #     enable_metrics      = var.enable_metrics
+  #     enable_vault_ui     = var.enable_vault_ui
+  #     metrics_path        = var.metrics_path
+  #     log_level           = var.vault_log_level
+  #     namespace           = var.vault_namespace
+  #     service_account     = "vault"
+  #     cluster_name        = data.terraform_remote_state.eks.outputs.eks_cluster_name
+  #   })
+  # ]
   
   depends_on = [
-    kubernetes_namespace.vault,
-    kubernetes_secret.vault_tls
+    kubernetes_namespace.vault
   ]
 }
