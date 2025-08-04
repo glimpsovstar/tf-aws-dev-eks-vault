@@ -1,0 +1,23 @@
+# Resource cleanup script (optional)
+# Run this if you want to clean up any existing Vault resources first
+
+# This can be added as a null_resource if you want automated cleanup
+resource "null_resource" "cleanup_old_vault" {
+  count = var.cleanup_existing ? 1 : 0
+  
+  provisioner "local-exec" {
+    command = <<-EOT
+      echo "Cleaning up existing Vault resources..."
+      
+      # Remove any existing Helm releases (ignore errors)
+      kubectl delete statefulset vault -n ${var.vault_namespace} --ignore-not-found=true
+      kubectl delete service vault -n ${var.vault_namespace} --ignore-not-found=true
+      kubectl delete service vault-ui -n ${var.vault_namespace} --ignore-not-found=true
+      kubectl delete service vault-internal -n ${var.vault_namespace} --ignore-not-found=true
+      kubectl delete configmap vault-config -n ${var.vault_namespace} --ignore-not-found=true
+      kubectl delete pod -l app.kubernetes.io/name=vault -n ${var.vault_namespace} --ignore-not-found=true
+      
+      echo "Cleanup completed"
+    EOT
+  }
+}

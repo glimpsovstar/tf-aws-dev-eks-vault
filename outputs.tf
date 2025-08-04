@@ -6,12 +6,12 @@ output "vault_namespace" {
 
 output "vault_service_name" {
   description = "Name of the Vault service"
-  value       = "vault"
+  value       = "vault-v2"
 }
 
 output "vault_ui_service_name" {
   description = "Name of the Vault UI service"
-  value       = "vault-ui"
+  value       = "vault-v2-ui"
 }
 
 output "vault_port" {

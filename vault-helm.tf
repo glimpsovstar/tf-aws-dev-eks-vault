@@ -1,15 +1,7 @@
-# Generate a unique deployment ID for forced recreation
-resource "random_id" "deployment" {
-  byte_length = 4
-  keepers = {
-    namespace = var.vault_namespace
-    timestamp = timestamp()
-  }
-}
-
 # Add HashiCorp Helm repository
+# Note: Using "vault-v2" as release name to avoid conflicts with any existing "vault" release
 resource "helm_release" "vault" {
-  name       = "vault"
+  name       = "vault-v2"
   repository = "https://helm.releases.hashicorp.com"
   chart      = "vault"
   version    = "0.27.0"
@@ -30,20 +22,6 @@ resource "helm_release" "vault" {
   # Cleanup on failure
   cleanup_on_fail  = true
   atomic           = true
-  
-  # Force replacement if name conflicts occur
-  lifecycle {
-    create_before_destroy = false
-    replace_triggered_by = [
-      random_id.deployment
-    ]
-  }
-  
-  # Add a unique identifier to force recreation
-  set {
-    name  = "global.deploy_id"
-    value = "v${random_id.deployment.hex}"
-  }
   
   # Core Vault configuration
   set {
@@ -84,7 +62,7 @@ resource "helm_release" "vault" {
   
   set {
     name  = "injector.serviceAccount.name"
-    value = "vault-agent-injector"
+    value = "vault-v2-agent-injector"
   }
   
   # Server configuration
@@ -149,7 +127,7 @@ resource "helm_release" "vault" {
   
   set {
     name  = "server.serviceAccount.name"
-    value = "vault"
+    value = "vault-v2"
   }
   
   set {
@@ -289,7 +267,6 @@ resource "helm_release" "vault" {
   # ]
   
   depends_on = [
-    kubernetes_namespace.vault,
-    random_id.deployment
+    kubernetes_namespace.vault
   ]
 }
