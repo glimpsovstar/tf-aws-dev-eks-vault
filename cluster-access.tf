@@ -1,53 +1,53 @@
-# Create a service account for cluster access
-resource "kubernetes_service_account" "admin_user" {
-  metadata {
-    name      = "admin-user"
-    namespace = "kube-system"
-  }
-}
+# Create a service account for cluster access - DISABLED FOR NOW
+# Uncomment these resources once Vault is deployed and working
 
-# Create cluster role binding for admin access
-resource "kubernetes_cluster_role_binding" "admin_user" {
-  metadata {
-    name = "admin-user"
-  }
+# resource "kubernetes_service_account" "admin_user" {
+#   metadata {
+#     name      = "admin-user"
+#     namespace = "kube-system"
+#   }
+# }
 
-  role_ref {
-    api_group = "rbac.authorization.k8s.io"
-    kind      = "ClusterRole"
-    name      = "cluster-admin"
-  }
+# resource "kubernetes_cluster_role_binding" "admin_user" {
+#   metadata {
+#     name = "admin-user"
+#   }
 
-  subject {
-    kind      = "ServiceAccount"
-    name      = kubernetes_service_account.admin_user.metadata[0].name
-    namespace = kubernetes_service_account.admin_user.metadata[0].namespace
-  }
-}
+#   role_ref {
+#     api_group = "rbac.authorization.k8s.io"
+#     kind      = "ClusterRole"
+#     name      = "cluster-admin"
+#   }
 
-# Create a secret for the service account token (for Kubernetes 1.24+)
-resource "kubernetes_secret" "admin_user_token" {
-  metadata {
-    name      = "admin-user-token"
-    namespace = "kube-system"
-    annotations = {
-      "kubernetes.io/service-account.name" = kubernetes_service_account.admin_user.metadata[0].name
-    }
-  }
+#   subject {
+#     kind      = "ServiceAccount"
+#     name      = kubernetes_service_account.admin_user.metadata[0].name
+#     namespace = kubernetes_service_account.admin_user.metadata[0].namespace
+#   }
+# }
 
-  type = "kubernetes.io/service-account-token"
-}
+# resource "kubernetes_secret" "admin_user_token" {
+#   metadata {
+#     name      = "admin-user-token"
+#     namespace = "kube-system"
+#     annotations = {
+#       "kubernetes.io/service-account.name" = kubernetes_service_account.admin_user.metadata[0].name
+#     }
+#   }
 
-# Output the service account information
-output "admin_service_account" {
-  description = "Service account information for cluster access"
-  value = {
-    name      = kubernetes_service_account.admin_user.metadata[0].name
-    namespace = kubernetes_service_account.admin_user.metadata[0].namespace
-  }
-}
+#   type = "kubernetes.io/service-account-token"
+# }
 
-# Output instructions for accessing the cluster
+# Output the service account information - DISABLED
+# output "admin_service_account" {
+#   description = "Service account information for cluster access"
+#   value = {
+#     name      = kubernetes_service_account.admin_user.metadata[0].name
+#     namespace = kubernetes_service_account.admin_user.metadata[0].namespace
+#   }
+# }
+
+# Output instructions for accessing the cluster - DISABLED
 output "kubectl_access_instructions" {
   description = "Instructions for accessing the cluster"
   value = <<-EOT

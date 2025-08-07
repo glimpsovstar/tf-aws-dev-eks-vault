@@ -45,8 +45,7 @@ resource "null_resource" "vault_status_check" {
   }
   
   depends_on = [
-    helm_release.vault,
-    kubernetes_service_account.admin_user
+    helm_release.vault
   ]
   
   triggers = {
