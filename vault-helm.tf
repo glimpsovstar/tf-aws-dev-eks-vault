@@ -64,10 +64,10 @@ resource "helm_release" "vault" {
     value = "true"
   }
 
-  # Expose Vault via LoadBalancer for public access 
+  # Use ClusterIP - let vault-ingress.tf handle external access via its LoadBalancer
   set {
     name  = "server.service.type"
-    value = "LoadBalancer"
+    value = "ClusterIP"
   }
 
   set {
@@ -75,15 +75,25 @@ resource "helm_release" "vault" {
     value = "8200"
   }
 
-  # Disable health checks temporarily to isolate LoadBalancer issue
+  # Re-enable health checks since we're using ClusterIP (not directly exposed)
   set {
     name  = "server.readinessProbe.enabled"
-    value = "false"
+    value = "true"
+  }
+
+  set {
+    name  = "server.readinessProbe.path"
+    value = "/v1/sys/health?standbyok=true&sealedcode=200&uninitcode=200"
   }
 
   set {
     name  = "server.livenessProbe.enabled"
-    value = "false"
+    value = "true"
+  }
+
+  set {
+    name  = "server.livenessProbe.path"
+    value = "/v1/sys/health?standbyok=true"
   }
 
   # Expose UI through the main server service

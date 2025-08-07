@@ -65,8 +65,12 @@ resource "kubernetes_service" "vault_lb" {
     }
     
     annotations = {
-      "service.beta.kubernetes.io/aws-load-balancer-type"     = "nlb"
-      "service.beta.kubernetes.io/aws-load-balancer-internal" = "true"
+      "service.beta.kubernetes.io/aws-load-balancer-type" = "nlb"
+      # Remove internal annotation to make it public
+      "service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol" = "HTTP"
+      "service.beta.kubernetes.io/aws-load-balancer-healthcheck-path" = "/v1/sys/health?standbyok=true"
+      "service.beta.kubernetes.io/aws-load-balancer-healthcheck-port" = "8200"
+      "service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval" = "30"
     }
   }
 
