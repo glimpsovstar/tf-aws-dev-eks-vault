@@ -63,7 +63,24 @@ resource "helm_release" "vault" {
     name  = "global.tlsDisable"
     value = "true"
   }
-  
+
+  # Expose Vault via LoadBalancer for public access
+  set {
+    name  = "server.service.type"
+    value = "LoadBalancer"
+  }
+
+  set {
+    name  = "server.service.port"
+    value = "8200"
+  }
+
+  # Also expose the UI service as LoadBalancer
+  set {
+    name  = "ui.serviceType"
+    value = "LoadBalancer"
+  }
+
   depends_on = [
     kubernetes_namespace.vault,
     null_resource.validate_helm_prerequisites

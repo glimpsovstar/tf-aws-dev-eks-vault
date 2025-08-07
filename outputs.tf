@@ -134,3 +134,23 @@ output "debug_eks_cluster_info" {
   }
   sensitive = true
 }
+
+# Public access information for Vault LoadBalancer
+output "vault_public_url" {
+  description = "Public URL to access Vault (once LoadBalancer is provisioned)"
+  value       = "http://<VAULT_LOADBALANCER_URL>:8200"
+}
+
+output "vault_public_access_instructions" {
+  description = "Instructions to get the public Vault URL"
+  value = <<-EOT
+    To get the public Vault URL after deployment:
+    1. Run: kubectl get svc -n vault vault-minimal
+    2. Look for EXTERNAL-IP column
+    3. Access Vault at: http://<EXTERNAL-IP>:8200
+    4. Login with token: myroot
+    
+    Or use this command to get the URL:
+    kubectl get svc -n vault vault-minimal -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+  EOT
+}
