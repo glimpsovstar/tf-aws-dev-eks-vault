@@ -67,8 +67,7 @@ resource "kubernetes_service" "vault_lb" {
     annotations = {
       "service.beta.kubernetes.io/aws-load-balancer-type" = "nlb"
       # Remove internal annotation to make it public
-      "service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol" = "HTTP"
-      "service.beta.kubernetes.io/aws-load-balancer-healthcheck-path" = "/v1/sys/health?standbyok=true"
+      "service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol" = "TCP"
       "service.beta.kubernetes.io/aws-load-balancer-healthcheck-port" = "8200"
       "service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval" = "30"
     }
@@ -93,7 +92,7 @@ resource "kubernetes_service" "vault_lb" {
 
     selector = {
       "app.kubernetes.io/name"     = "vault"
-      "app.kubernetes.io/instance" = "vault"
+      "app.kubernetes.io/instance" = "vault-minimal"  # Match the Helm release name
       component                    = "server"
     }
   }

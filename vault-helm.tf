@@ -47,18 +47,16 @@ resource "helm_release" "vault" {
     value = "false"
   }
   
-  # Minimal resources
+  # Minimal resources - increase memory for stability
   set {
     name  = "server.resources.requests.memory"
-    value = "128Mi"
+    value = "256Mi"
   }
-  
+
   set {
     name  = "server.resources.requests.cpu"
-    value = "50m"
-  }
-  
-  # No TLS
+    value = "100m"
+  }  # No TLS
   set {
     name  = "global.tlsDisable"
     value = "true"
