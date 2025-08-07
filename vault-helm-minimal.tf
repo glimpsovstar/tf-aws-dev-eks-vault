@@ -8,12 +8,11 @@ resource "helm_release" "vault" {
   version    = "0.27.0"
   namespace  = kubernetes_namespace.vault.metadata[0].name
   
-  # Minimal deployment settings with debugging
-  wait             = true   # Actually wait to see what's failing
-  wait_for_jobs    = false  # Don't wait for jobs
-  timeout          = 600    # 10 minutes for debugging
+  # Minimal deployment settings
+  wait             = false  # Don't wait for readiness
+  timeout          = 300    # 5 minutes max
   create_namespace = false
-  cleanup_on_fail  = false  # Keep failed resources for debugging
+  cleanup_on_fail  = true
   
   # DEVELOPMENT MODE - In-memory storage, no persistence
   set {
