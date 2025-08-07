@@ -56,7 +56,9 @@ resource "helm_release" "vault" {
   set {
     name  = "server.resources.requests.cpu"
     value = "100m"
-  }  # No TLS
+  }
+
+  # No TLS
   set {
     name  = "global.tlsDisable"
     value = "true"
