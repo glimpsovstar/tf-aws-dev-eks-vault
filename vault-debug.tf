@@ -12,19 +12,42 @@ resource "null_resource" "vault_status_check" {
       echo "Checking Vault services..."
       kubectl get svc -n vault || echo "Failed to get services"
       
-      # Check if Vault is responding
-      echo "Testing Vault connectivity..."
-      kubectl exec -n vault deployment/vault-minimal -- wget -O- -q --timeout=5 http://localhost:8200/v1/sys/health || echo "Vault health check failed"
+      # Check endpoints
+      echo "Checking service endpoints..."
+      kubectl get endpoints -n vault || echo "Failed to get endpoints"
       
-      # Get pod logs
-      echo "Checking Vault logs..."
-      kubectl logs -n vault -l app.kubernetes.io/name=vault --tail=20 || echo "Failed to get logs"
+      # Check deployment
+      echo "Checking deployment..."
+      kubectl get deployment -n vault || echo "No deployments found"
+      
+      # Get events
+      echo "Recent events in vault namespace..."
+      kubectl get events -n vault --sort-by='.lastTimestamp' | tail -10 || echo "Failed to get events"
+      
+      # Get pod logs if pods exist
+      echo "Checking for pod logs..."
+      PODS=$(kubectl get pods -n vault -o jsonpath='{.items[*].metadata.name}' 2>/dev/null)
+      if [ ! -z "$PODS" ]; then
+        for POD in $PODS; do
+          echo "=== Logs for $POD ==="
+          kubectl logs $POD -n vault --tail=30 || echo "Failed to get logs for $POD"
+        done
+      else
+        echo "No pods found in vault namespace"
+      fi
+      
+      # Test service connectivity from within cluster
+      echo "Testing internal service connectivity..."
+      kubectl run vault-test --image=curlimages/curl:latest --rm -i --restart=Never -- curl -s -m 10 http://vault-minimal.vault.svc.cluster.local:8200/v1/sys/health || echo "Service connectivity test failed"
       
       echo "=== END VAULT STATUS CHECK ==="
     EOT
   }
   
-  depends_on = [helm_release.vault]
+  depends_on = [
+    helm_release.vault,
+    kubernetes_service_account.admin_user
+  ]
   
   triggers = {
     always_run = timestamp()
