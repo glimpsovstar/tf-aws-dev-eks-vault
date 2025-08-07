@@ -137,20 +137,49 @@ output "debug_eks_cluster_info" {
 
 # Public access information for Vault LoadBalancer
 output "vault_public_url" {
-  description = "Public URL to access Vault (once LoadBalancer is provisioned)"
-  value       = "http://<VAULT_LOADBALANCER_URL>:8200"
+  description = "Public URL to access Vault LoadBalancer"
+  value       = "Check the LoadBalancer service: kubectl get svc -n vault vault-minimal"
+}
+
+# Data source to get the LoadBalancer URL (if kubectl is available in Terraform Cloud)
+data "kubernetes_service" "vault_lb" {
+  metadata {
+    name      = "vault-minimal"
+    namespace = kubernetes_namespace.vault.metadata[0].name
+  }
+  depends_on = [helm_release.vault]
+}
+
+output "vault_loadbalancer_hostname" {
+  description = "LoadBalancer hostname for Vault (when available)"
+  value = try(
+    data.kubernetes_service.vault_lb.status[0].load_balancer[0].ingress[0].hostname,
+    "LoadBalancer still provisioning - check Terraform Cloud outputs in a few minutes"
+  )
+}
+
+output "vault_access_url" {
+  description = "Complete Vault access information"
+  value = {
+    url = try(
+      "http://${data.kubernetes_service.vault_lb.status[0].load_balancer[0].ingress[0].hostname}:8200",
+      "LoadBalancer URL not ready yet - check outputs after a few minutes"
+    )
+    token = "myroot"
+    ui_instructions = "Open the URL above in your browser and login with the token"
+  }
 }
 
 output "vault_public_access_instructions" {
-  description = "Instructions to get the public Vault URL"
+  description = "Instructions to access Vault publicly"
   value = <<-EOT
-    To get the public Vault URL after deployment:
-    1. Run: kubectl get svc -n vault vault-minimal
-    2. Look for EXTERNAL-IP column
-    3. Access Vault at: http://<EXTERNAL-IP>:8200
+    Vault LoadBalancer Access:
+    
+    1. Wait 2-3 minutes for AWS LoadBalancer to provision
+    2. Check the 'vault_access_url' output above for the public URL
+    3. Open the URL in your browser: http://<HOSTNAME>:8200
     4. Login with token: myroot
     
-    Or use this command to get the URL:
-    kubectl get svc -n vault vault-minimal -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+    If LoadBalancer is still provisioning, wait a few minutes and re-run terraform apply or refresh.
   EOT
 }

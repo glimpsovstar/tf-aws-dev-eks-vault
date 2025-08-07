@@ -75,10 +75,10 @@ resource "helm_release" "vault" {
     value = "8200"
   }
 
-  # Also expose the UI service as LoadBalancer
+  # Expose UI through the main server service
   set {
-    name  = "ui.serviceType"
-    value = "LoadBalancer"
+    name  = "ui.externalPort"
+    value = "8200"
   }
 
   depends_on = [
