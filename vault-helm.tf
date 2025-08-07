@@ -75,15 +75,15 @@ resource "helm_release" "vault" {
     value = "8200"
   }
 
-  # Configure basic health checks
+  # Disable health checks temporarily to isolate LoadBalancer issue
   set {
     name  = "server.readinessProbe.enabled"
-    value = "true"
+    value = "false"
   }
 
   set {
     name  = "server.livenessProbe.enabled"
-    value = "true"
+    value = "false"
   }
 
   # Expose UI through the main server service
