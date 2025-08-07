@@ -64,15 +64,28 @@ resource "helm_release" "vault" {
     value = "true"
   }
 
-  # Use ClusterIP - let vault-ingress.tf handle external access via its LoadBalancer
+  # Use LoadBalancer directly from Helm with NLB annotations
   set {
     name  = "server.service.type"
-    value = "ClusterIP"
+    value = "LoadBalancer"
   }
 
   set {
     name  = "server.service.port"
     value = "8200"
+  }
+
+  # Add NLB annotations to the Helm service
+  set {
+    name  = "server.service.annotations.service\\.beta\\.kubernetes\\.io/aws-load-balancer-type"
+    value = "nlb"
+    type  = "string"
+  }
+
+  set {
+    name  = "server.service.annotations.service\\.beta\\.kubernetes\\.io/aws-load-balancer-healthcheck-protocol"
+    value = "TCP"
+    type  = "string"
   }
 
   # Re-enable health checks since we're using ClusterIP (not directly exposed)

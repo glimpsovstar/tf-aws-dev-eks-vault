@@ -50,9 +50,9 @@ resource "kubernetes_ingress_v1" "vault" {
   depends_on = [helm_release.vault]
 }
 
-# Service for external load balancer access (alternative to ingress)
+# Service for external load balancer access (alternative to ingress) - DISABLED, using Helm service instead
 resource "kubernetes_service" "vault_lb" {
-  count = var.enable_ingress == false ? 1 : 0
+  count = 0  # Disabled - using Helm chart LoadBalancer service instead
 
   metadata {
     name      = "vault-lb"
@@ -91,9 +91,8 @@ resource "kubernetes_service" "vault_lb" {
     }
 
     selector = {
-      "app.kubernetes.io/name"     = "vault"
-      "app.kubernetes.io/instance" = "vault-minimal"  # Match the Helm release name
-      component                    = "server"
+      "app.kubernetes.io/name" = "vault"
+      "component" = "server"
     }
   }
 
