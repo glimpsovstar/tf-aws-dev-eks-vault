@@ -75,6 +75,27 @@ resource "helm_release" "vault" {
     value = "8200"
   }
 
+  # Configure health check for LoadBalancer
+  set {
+    name  = "server.readinessProbe.enabled"
+    value = "true"
+  }
+
+  set {
+    name  = "server.readinessProbe.path"
+    value = "/v1/sys/health?standbyok=true&sealedcode=200&uninitcode=200"
+  }
+
+  set {
+    name  = "server.livenessProbe.enabled"
+    value = "true"
+  }
+
+  set {
+    name  = "server.livenessProbe.path"
+    value = "/v1/sys/health?standbyok=true"
+  }
+
   # Expose UI through the main server service
   set {
     name  = "ui.externalPort"
