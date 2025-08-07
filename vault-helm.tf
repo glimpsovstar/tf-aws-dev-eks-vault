@@ -64,7 +64,7 @@ resource "helm_release" "vault" {
     value = "true"
   }
 
-  # Expose Vault via LoadBalancer for public access
+  # Expose Vault via LoadBalancer for public access (use NLB for better health checks)
   set {
     name  = "server.service.type"
     value = "LoadBalancer"
@@ -75,25 +75,37 @@ resource "helm_release" "vault" {
     value = "8200"
   }
 
-  # Configure health check for LoadBalancer
+  # Use Network Load Balancer instead of Classic
+  set {
+    name  = "server.service.annotations.service\\.beta\\.kubernetes\\.io/aws-load-balancer-type"
+    value = "nlb"
+  }
+
+  # Enable HTTP health checks on NLB
+  set {
+    name  = "server.service.annotations.service\\.beta\\.kubernetes\\.io/aws-load-balancer-healthcheck-protocol"
+    value = "HTTP"
+  }
+
+  set {
+    name  = "server.service.annotations.service\\.beta\\.kubernetes\\.io/aws-load-balancer-healthcheck-path"
+    value = "/v1/sys/health?standbyok=true"
+  }
+
+  set {
+    name  = "server.service.annotations.service\\.beta\\.kubernetes\\.io/aws-load-balancer-healthcheck-port"
+    value = "8200"
+  }
+
+  # Configure health check for LoadBalancer - Now handled by NLB annotations above
   set {
     name  = "server.readinessProbe.enabled"
     value = "true"
   }
 
   set {
-    name  = "server.readinessProbe.path"
-    value = "/v1/sys/health?standbyok=true&sealedcode=200&uninitcode=200"
-  }
-
-  set {
     name  = "server.livenessProbe.enabled"
     value = "true"
-  }
-
-  set {
-    name  = "server.livenessProbe.path"
-    value = "/v1/sys/health?standbyok=true"
   }
 
   # Expose UI through the main server service
